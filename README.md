@@ -61,9 +61,7 @@
 - Web-based Django app for viewing & interacting with **3D reconstructed scenes**  
 - Optimized **for faster rendering with NVIDIA TensorRT**  
 
-🚀 **Showcase Boost:** **"3D Scene Reconstruction from Video using NeRF & Transformers!"**  
 
----
 
 ## **🟣 Advanced Level**  
 ### **5️⃣ Synthetic Data Generation & Model Optimization for Low-Light Image Segmentation**  
