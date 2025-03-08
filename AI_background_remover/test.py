@@ -48,7 +48,7 @@ def process_video(video_path):
 
 # Gradio UI
 with gr.Blocks() as demo:
-    gr.Markdown("# 🖼️ AI Background Removal & Replacement")
+    gr.Markdown("# AI Background Removal & Replacement")
 
     with gr.Tab("Image"):
         image_input = gr.Image(label="Upload an Image", type="pil")
