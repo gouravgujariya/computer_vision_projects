@@ -5,7 +5,7 @@ import numpy as np
 from PIL import Image
 from transformers import AutoModelForImageSegmentation
 from torchvision import transforms
-
+from pandas
 # Load BiRefNet model (for background segmentation)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 birefnet = AutoModelForImageSegmentation.from_pretrained("ZhengPeng7/BiRefNet", trust_remote_code=True).to(device)
