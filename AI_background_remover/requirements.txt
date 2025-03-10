@@ -1,0 +1,10 @@
+gradio
+torch
+torchvision
+pillow
+numpy
+typing
+gitpython
+huggingface_hub
+safetensors
+gradio_imageslider
