@@ -1,83 +1,72 @@
-import gradio as gr
-import torch
-import cv2
 import numpy as np
+import torch
+import torch.nn.functional as F
+from torchvision.transforms.functional import normalize
+import gradio as gr
+from gradio_imageslider import ImageSlider
+from briarmbg import BriaRMBG
+import PIL
 from PIL import Image
-from transformers import AutoModelForImageSegmentation
-from torchvision import transforms
-from pandas
-# Load BiRefNet model (for background segmentation)
-device = "cuda" if torch.cuda.is_available() else "cpu"
-birefnet = AutoModelForImageSegmentation.from_pretrained("ZhengPeng7/BiRefNet", trust_remote_code=True).to(device)
+from typing import Tuple
 
-# Preprocessing pipeline for images
-transform_image = transforms.Compose([
-    transforms.Resize((1024, 1024)),
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-])
 
-# Function to remove background from an image
-def remove_bg(image):
-    image = image.convert("RGB")
-    orig_size = image.size
-    input_tensor = transform_image(image).unsqueeze(0).to(device)
+net = BriaRMBG.from_pretrained("briaai/RMBG-1.4")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+net.to(device)
+net.eval()    
 
-    # Prediction
-    with torch.no_grad():
-        preds = birefnet(input_tensor)[-1].sigmoid().cpu()
-    mask = preds[0].squeeze().numpy()
-
-    # Convert mask to proper format
-    mask = (mask * 255).astype(np.uint8)
-    mask = cv2.resize(mask, orig_size)
-
-    # Apply mask to image
-    image_np = np.array(image)
-    image_np = cv2.cvtColor(image_np, cv2.COLOR_RGB2RGBA)
-    image_np[:, :, 3] = mask  # Set alpha channel
-
-    return Image.fromarray(image_np)
-
-# Function to process video (frame-by-frame background removal)
-def process_video(video_path):
-    cap = cv2.VideoCapture(video_path)
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    out_path = "output_video.mp4"
-    frame_width = int(cap.get(3))
-    frame_height = int(cap.get(4))
-    fps = cap.get(cv2.CAP_PROP_FPS)
     
-    out = cv2.VideoWriter(out_path, fourcc, fps, (frame_width, frame_height), True)
+def resize_image(image):
+    image = image.convert('RGB')
+    model_input_size = (1024, 1024)
+    image = image.resize(model_input_size, Image.BILINEAR)
+    return image
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
 
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        pil_img = Image.fromarray(frame)
-        bg_removed = remove_bg(pil_img)
-        out.write(cv2.cvtColor(np.array(bg_removed), cv2.COLOR_RGBA2BGRA))
+def process(image):
 
-    cap.release()
-    out.release()
-    return out_path
+    # prepare input
+    orig_image = Image.fromarray(image)
+    w,h = orig_im_size = orig_image.size
+    image = resize_image(orig_image)
+    im_np = np.array(image)
+    im_tensor = torch.tensor(im_np, dtype=torch.float32).permute(2,0,1)
+    im_tensor = torch.unsqueeze(im_tensor,0)
+    im_tensor = torch.divide(im_tensor,255.0)
+    im_tensor = normalize(im_tensor,[0.5,0.5,0.5],[1.0,1.0,1.0])
+    if torch.cuda.is_available():
+        im_tensor=im_tensor.cuda()
 
-# Gradio UI
-with gr.Blocks() as demo:
-    gr.Markdown("# 🖼️ AI Background Removal & Replacement")
+    #inference
+    result=net(im_tensor)
+    # post process
+    result = torch.squeeze(F.interpolate(result[0][0], size=(h,w), mode='bilinear') ,0)
+    ma = torch.max(result)
+    mi = torch.min(result)
+    result = (result-mi)/(ma-mi)    
+    # image to pil
+    result_array = (result*255).cpu().data.numpy().astype(np.uint8)
+    pil_mask = Image.fromarray(np.squeeze(result_array))
+    # add the mask on the original image as alpha channel
+    new_im = orig_image.copy()
+    new_im.putalpha(pil_mask)
+    return new_im
+    # return [new_orig_image, new_im]
 
-    with gr.Tab("Image"):
-        image_input = gr.Image(label="Upload an Image", type="pil")
-        image_output = gr.Image(label="Background Removed Image", type="pil")
-        remove_btn = gr.Button("Remove Background")
-        remove_btn.click(remove_bg, inputs=image_input, outputs=image_output)
 
-    with gr.Tab("Video"):
-        video_input = gr.Video(label="Upload a Video")
-        video_output = gr.Video(label="Processed Video")
-        video_btn = gr.Button("Process Video")
-        video_btn.click(process_video, inputs=video_input, outputs=video_output)
+gr.Markdown("## BRIA RMBG 1.4")
+gr.HTML('''
+  <p style="margin-bottom: 10px; font-size: 94%">
+    This is a demo for BRIA RMBG 1.4 that using
+    <a href="https://huggingface.co/briaai/RMBG-1.4" target="_blank">BRIA RMBG-1.4 image matting model</a> as backbone. 
+  </p>
+''')
+title = "Background Removal"
+description = r"""Background removal model developed by <a href='https://BRIA.AI' target='_blank'><b>BRIA.AI</b></a>, trained on a carefully selected dataset and is available as an open-source model for non-commercial use.<br> 
+For test upload your image and wait. Read more at model card <a href='https://huggingface.co/briaai/RMBG-1.4' target='_blank'><b>briaai/RMBG-1.4</b></a>. To purchase a commercial license, simply click <a href='https://go.bria.ai/3ZCBTLH' target='_blank'><b>Here</b></a>. <br>
+"""
+examples = [['./input.jpg'],]
+demo = gr.Interface(fn=process,inputs="image", outputs="image", examples=examples, title=title, description=description)
 
-demo.launch()
+if __name__ == "__main__":
+    demo.launch(share=False)
