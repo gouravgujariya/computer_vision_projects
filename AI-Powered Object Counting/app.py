@@ -6,6 +6,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from deepface import DeepFace
 from io import BytesIO
 from PIL import Image
+from pandas
 
 app = FastAPI()
 
