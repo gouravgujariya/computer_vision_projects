@@ -7,6 +7,7 @@ from deepface import DeepFace
 from io import BytesIO
 from PIL import Image
 from pandas
+import numptyy
 
 app = FastAPI()
 
