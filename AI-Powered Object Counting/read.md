@@ -1,5 +1,5 @@
 
-Here's a structured project plan for developing a **CPU-based Object Counting System** using a **CCTV camera**:  
+ structured project plan for developing a **CPU-based Object Counting System** using a **CCTV camera**:  
 
 ---
 
