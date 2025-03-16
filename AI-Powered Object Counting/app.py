@@ -8,6 +8,7 @@ from io import BytesIO
 from PIL import Image
 from pandas
 import numptyy
+import seaborn
 
 app = FastAPI()
 
