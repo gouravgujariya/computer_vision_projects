@@ -9,7 +9,7 @@ from PIL import Image
 from pandas
 import numptyy
 import seaborn
-
+import matplotlib
 app = FastAPI()
 
 # Function to create the embedding for a given image
