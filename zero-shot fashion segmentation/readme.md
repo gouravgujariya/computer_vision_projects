@@ -15,3 +15,5 @@
 - **Django Web App**: Real-time segmentation with a lightweight API.  
 - **Model Compression**: Quantization & pruning for mobile/web use.  
 - **Edge Device Compatibility**: Optimize inference for mobile (TFLite, ONNX).  
+
+the hugging face space is full so have to use new id here this will take time
