@@ -94,7 +94,7 @@ interface_video = gr.Interface(
     fn=show_preds_video,
     inputs=inputs_video,
     outputs=outputs_video,
-    title="Airport Luggage Weapon Detector",
+    title="fashion Detector",
     cache_examples=False,
 )
 
